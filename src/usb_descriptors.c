@@ -148,14 +148,15 @@ char const* string_desc_arr [] =
 {
   (const char[]) { 0x09, 0x04 }, // 0: is supported language is English (0x0409)
   "Some Internet Rando",         // 1: Manufacturer
-  "Pico Launchpad",              // 2: Product
-  "123456",                          // 3: Serials, should use chip ID
-  "Pico Launchpad MK1 Input",
-  "Pico Launchpad MK2 Input",
-  "Pico Launchpad MK3 Input",
-  "Pico Launchpad MK1 Output",
-  "Pico Launchpad MK2 Output",
-  "Pico Launchpad MK3 Output",
+  "Tonnetz",                     // 2: Product
+  "123456",                      // 3: Serials, should use chip ID
+  "Launchpad MK1",
+  "Launchpad MK2",
+  "Launchpad MK3",
+  "Notes"
+  "Launchpad MK1",
+  "Launchpad MK2",
+  "Launchpad MK3"
 };
 
 static uint16_t _desc_str[32];

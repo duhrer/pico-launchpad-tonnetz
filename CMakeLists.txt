@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 
-set(NAME pico-launchpad)
+set(NAME pico-launchpad-tonnetz)
 
 include(pico_sdk_import.cmake)
 
@@ -24,7 +24,7 @@ add_subdirectory(${PICO_PIO_USB_PATH} ${CMAKE_BINARY_DIR}/Pico-PIO-USB)
 
 # Add your source files
 add_executable(${NAME}
-    src/pico-launchpad.c
+    src/pico-launchpad-tonnetz.c
     src/usb_descriptors.c
     src/launchpad.c
 )

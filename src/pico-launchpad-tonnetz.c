@@ -46,12 +46,27 @@
 #include "launchpad.h"
 
 static struct board_state board_state = {
-  4, 5, true, {0, UNkNOWN}
+      // Fairly sure this is implied.
+      // .held_note_velocities = { 0 },
+      // .playing_note_velocities = { 0 },
+      
+      .is_dirty = true,
+      
+      .client = {      
+        .offset_by_cable = { 45, 45, 45 }
+      },
+
+      .host = {
+        .offset = 45,
+        .launchpad_version = UNkNOWN
+      }
 };
 
 // End state variables
 
 void midi_client_task(void);
+
+void sync_playing_notes(void);
 
 void core1_main() {
   sleep_ms(10);
@@ -105,6 +120,46 @@ int main() {
 
       board_state.is_dirty = false;
     }
+
+    sync_playing_notes();
+  }
+}
+
+void sync_playing_notes (void) {
+  for (int a = 0; a < 128; a++) {
+    uint8_t held_velocity = board_state.held_note_velocities[a];
+    uint8_t playing_velocity = board_state.playing_note_velocities[a];
+
+    // Time to stop an existing note
+    if (playing_velocity && !held_velocity) {
+      uint8_t note_off_message[3] = {
+          MIDI_CIN_NOTE_OFF << 4, a, held_velocity
+      };
+
+      // This should use cable 3.
+      tud_midi_stream_write(3, note_off_message, sizeof note_off_message);
+    }
+    // Time to start a new note
+    else if (!playing_velocity && held_velocity) {
+      uint8_t note_on_message[3] = {
+        MIDI_CIN_NOTE_ON << 4, a, held_velocity
+      };
+
+      // This should use cable 3.
+      tud_midi_stream_write(3, note_on_message, sizeof note_on_message);
+    }
+
+    // Time to indicate that the note's velocity has changed.
+    else if (playing_velocity != held_velocity) {
+      uint8_t poly_message[3] = {
+        MIDI_CIN_POLY_KEYPRESS << 4, a, held_velocity
+      };
+
+      // This should use cable 3.
+      tud_midi_stream_write(3, poly_message, sizeof poly_message);
+    }
+
+    board_state.playing_note_velocities[a] = held_velocity;
   }
 }
 
@@ -200,7 +255,7 @@ void midi_client_task(void)
     tud_midi_packet_read(incoming_packet);
 
     // Temporarily "loopback" internally.
-    tud_midi_packet_write(incoming_packet);
+    // tud_midi_packet_write(incoming_packet);
 
     process_incoming_client_packet(incoming_packet, &board_state);
   }

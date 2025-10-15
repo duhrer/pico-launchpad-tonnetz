@@ -100,11 +100,11 @@ extern "C" {
 #define CFG_TUD_MIDI_TX_BUFSIZE     1024
 
 // Support multiple inputs and outputs on the client side so that we can work with a range of Launchpad versions
-#define CFG_TUD_MIDI_NUMCABLES_IN   3
+#define CFG_TUD_MIDI_NUMCABLES_IN   4
 #define CFG_TUD_MIDI_NUMCABLES_OUT  3
 
 // Support MIDI port string labels after the serial number string
-#define CFG_TUD_MIDI_FIRST_PORT_STRIDX 1
+#define CFG_TUD_MIDI_FIRST_PORT_STRIDX 4
 
 #define CONFIG_TOTAL_LEN  (TUD_CONFIG_DESC_LEN + TUD_MIDI_MULTI_DESC_LEN(CFG_TUD_MIDI_NUMCABLES_IN,CFG_TUD_MIDI_NUMCABLES_OUT))
 
