@@ -127,17 +127,18 @@ int main() {
 
 void sync_playing_notes (void) {
   for (int a = 0; a < 128; a++) {
+    uint32_t bytes_written = 0;
+
     uint8_t held_velocity = board_state.held_note_velocities[a];
     uint8_t playing_velocity = board_state.playing_note_velocities[a];
 
-    // TODO: We need a better approach to avoid "stuck" notes and non-sounding notes.
     if (playing_velocity && !held_velocity) {
       uint8_t note_off_message[3] = {
           MIDI_CIN_NOTE_OFF << 4, a, held_velocity
       };
 
       // This should use cable 3.
-      tud_midi_stream_write(3, note_off_message, sizeof note_off_message);
+      bytes_written = tud_midi_stream_write(3, note_off_message, sizeof note_off_message);
     }
 
     // Play a new note
@@ -147,7 +148,7 @@ void sync_playing_notes (void) {
       };
 
       // This should use cable 3.
-      tud_midi_stream_write(3, note_on_message, sizeof note_on_message);
+      bytes_written = tud_midi_stream_write(3, note_on_message, sizeof note_on_message);
     }
 
     // Time to indicate that the note's velocity has changed.
@@ -157,10 +158,13 @@ void sync_playing_notes (void) {
       };
 
       // This should use cable 3.
-      tud_midi_stream_write(3, poly_message, sizeof poly_message);
+      bytes_written = tud_midi_stream_write(3, poly_message, sizeof poly_message);
     }
 
-    board_state.playing_note_velocities[a] = held_velocity;
+    // If we failed to send the message this time, leave it for the next pass.
+    if (bytes_written > 0) {
+      board_state.playing_note_velocities[a] = held_velocity;
+    }
   }
 }
 
