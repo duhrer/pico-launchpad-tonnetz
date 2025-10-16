@@ -75,6 +75,7 @@ void process_incoming_client_packet(uint8_t *, struct board_state*);
 void process_incoming_mk1_packet (uint8_t*, struct board_state*, enum HostOrClient);
 void process_incoming_mk2_packet (uint8_t*, struct board_state*, enum HostOrClient);
 void process_incoming_mk3_packet (uint8_t*, struct board_state*, enum HostOrClient);
+void process_incoming_external_packet(uint8_t*, struct board_state*);
 
 enum LaunchpadVersion get_launchpad_version (uint16_t, uint16_t);
 

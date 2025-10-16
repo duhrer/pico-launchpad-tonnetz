@@ -58,7 +58,7 @@ static struct board_state board_state = {
 
       .host = {
         .offset = 45,
-        .launchpad_version = UNkNOWN
+        .launchpad_version = MK3
       }
 };
 
@@ -130,7 +130,7 @@ void sync_playing_notes (void) {
     uint8_t held_velocity = board_state.held_note_velocities[a];
     uint8_t playing_velocity = board_state.playing_note_velocities[a];
 
-    // Time to stop an existing note
+    // TODO: We need a better approach to avoid "stuck" notes and non-sounding notes.
     if (playing_velocity && !held_velocity) {
       uint8_t note_off_message[3] = {
           MIDI_CIN_NOTE_OFF << 4, a, held_velocity
@@ -139,8 +139,9 @@ void sync_playing_notes (void) {
       // This should use cable 3.
       tud_midi_stream_write(3, note_off_message, sizeof note_off_message);
     }
-    // Time to start a new note
-    else if (!playing_velocity && held_velocity) {
+
+    // Play a new note
+    else if (playing_velocity == 0 && held_velocity) {
       uint8_t note_on_message[3] = {
         MIDI_CIN_NOTE_ON << 4, a, held_velocity
       };

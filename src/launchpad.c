@@ -219,18 +219,28 @@ void paint_mk3_client_launchpads(struct board_state *board_state) {
   // For now, use notes.
   for (int row = 0; row < 8; row++) {
     for (int column = 0; column < 10; column++) {
-      int launchpad_note = (row * 10) + column;
+      // Offset the row by one to skip the very lowest row of buttons and paint the square pads.
+      int launchpad_note = ((row + 1) * 10) + column;
 
       int tuned_note = board_state->client.offset_by_cable[2] + (column * 3) + (row * 4);
       enum NoteType tuned_note_type = get_type_for_note(tuned_note);
 
-      uint8_t velocity = 0;
+      uint8_t velocity = 0; // Black / Unlit
 
-      if (tuned_note_type == C_NATURAL) {
-        velocity = 120;
-      }
-      else if (tuned_note_type == NON_C_NATURAL) {
-        velocity = 3;
+      // We have to paint the first column black because there are also
+      // controls we use there.
+      if (column) {
+        if (board_state->held_note_velocities[tuned_note] > 0) {
+          velocity = 79; // Blue
+        }
+        else {
+          if (tuned_note_type == C_NATURAL) {
+            velocity = 120; // Red
+          }
+          else if (tuned_note_type == NON_C_NATURAL) {
+            velocity = 3; // White
+          }
+        }
       }
 
       uint8_t note_on_message[3] = {
@@ -297,62 +307,78 @@ void paint_mk2_host_launchpad(struct board_state *board_state) {
         int column = launchpad_note % 10;
         int row = ((launchpad_note - column)/10) - 1;
 
-        int tuned_note = (board_state->host.offset) + (column * 3) + (row * 4);
+        uint8_t velocity = 0;
 
-        if (tuned_note < 128) {
-          uint8_t velocity = 0;
+        // Skip the first column as we need to keep those black for controls.
+        if (column) {
+          int tuned_note = (board_state->host.offset) + (column * 3) + (row * 4);
 
-          if (board_state->held_note_velocities[tuned_note] > 0) {
-            velocity = 79; // Blue
-          }
-          else {
-            enum NoteType tuned_note_type = get_type_for_note(tuned_note);
+          if (tuned_note < 128) {
 
-            if (tuned_note_type == C_NATURAL) {
-              velocity = 120; // Red
+            if (board_state->held_note_velocities[tuned_note] > 0) {
+              velocity = 79; // Blue
             }
-            else if (tuned_note_type == NON_C_NATURAL) {
-              velocity = 3; // White
+            else {
+              enum NoteType tuned_note_type = get_type_for_note(tuned_note);
+
+              if (tuned_note_type == C_NATURAL) {
+                velocity = 120; // Red
+              }
+              else if (tuned_note_type == NON_C_NATURAL) {
+                velocity = 3; // White
+              }
             }
-          }
+         }
 
-          uint8_t note_on_message[3] = {
-            MIDI_CIN_NOTE_ON << 4, launchpad_note, velocity
-          };
+        uint8_t note_on_message[3] = {
+          MIDI_CIN_NOTE_ON << 4, launchpad_note, velocity
+        };
 
-          // tuh_midi_stream_write(board_state->host.client_idx, 1, note_on_message, sizeof(note_on_message));
-          tuh_midi_stream_write(0, 1, note_on_message, sizeof(note_on_message));
-        }
+        // tuh_midi_stream_write(board_state->host.client_idx, 1, note_on_message, sizeof(note_on_message));
+        tuh_midi_stream_write(0, 1, note_on_message, sizeof(note_on_message));
+      }
     }
 }
 
 // TODO: When we figure out sending sysex to the host's client device, we can
 // simplify this by using their sysex strategy (see the client implementation).
+// TODO: Don't paint the left column of (non square pad) buttons.
+
 void paint_mk3_host_launchpad(struct board_state *board_state) {
-    // Write note messages for the host side until we figure out sysex there.
-    for (int launchpad_note = 1; launchpad_note < 99; launchpad_note++) {
-        int launchpad_note_col = launchpad_note % 10;
-        int launchpad_note_row = (launchpad_note - launchpad_note_col)/10;
+  for (int row = 0; row < 8; row++) {
+    for (int column = 0; column < 10; column++) {
+      // Offset the row by one to skip the very lowest row of buttons and paint the square pads.
+      int launchpad_note = ((row + 1) * 10) + column;
 
-        int tuned_note = board_state->host.offset + (launchpad_note_col * 3) + (launchpad_note_row * 4);
-        enum NoteType tuned_note_type = get_type_for_note(tuned_note);
+      int tuned_note = board_state->host.offset + (column * 3) + (row * 4);
+      enum NoteType tuned_note_type = get_type_for_note(tuned_note);
 
-        uint8_t velocity = 0;
+      uint8_t velocity = 0; // Black / Unlit
 
-        if (tuned_note_type == C_NATURAL) {
-          velocity = 120;
+      // We have to paint the first column black because there are also
+      // controls we use there.
+      if (column) {
+        if (board_state->held_note_velocities[tuned_note] > 0) {
+          velocity = 79; // Blue
         }
-        else if (tuned_note_type == NON_C_NATURAL) {
-          velocity = 3;
+        else {
+          if (tuned_note_type == C_NATURAL) {
+            velocity = 120; // Red
+          }
+          else if (tuned_note_type == NON_C_NATURAL) {
+            velocity = 3; // White
+          }
         }
-        
-        uint8_t note_on_message[3] = {
-          MIDI_CIN_NOTE_ON << 4, launchpad_note, velocity
-        };
+      }
 
-        // The MK3 wants data on the first cable, i.e. "MIDI" and not "DIN" or "DAW"
-        tuh_midi_stream_write(board_state->host.client_idx, 0, note_on_message, sizeof(note_on_message));
+      uint8_t note_on_message[3] = {
+        MIDI_CIN_NOTE_ON << 4, launchpad_note, velocity
+      };
+
+      // The MK3 wants data on the first cable, i.e. "MIDI" and not "DIN" or "DAW"
+      tuh_midi_stream_write(board_state->host.client_idx, 0, note_on_message, sizeof(note_on_message));
     }
+  }
 }
 
 void process_incoming_host_packet(uint8_t *incoming_packet, struct board_state *board_state) {
@@ -381,6 +407,10 @@ void process_incoming_client_packet(uint8_t *incoming_packet, struct board_state
     // MK3
     else if (cable == 2) {
       process_incoming_mk3_packet(incoming_packet, board_state, CLIENT);
+    }
+    // Passthrough "notes" channel
+    else if (cable == 3) {
+      process_incoming_external_packet(incoming_packet, board_state);
     }
 }
 
@@ -555,7 +585,6 @@ void process_incoming_mk3_packet (uint8_t *incoming_packet, struct board_state *
 
   int offset = hostOrClient == HOST ? board_state -> host.offset : board_state->client.offset_by_cable[2]; 
 
-
   // Start with the message type
   int type = data[0] >> 4;
 
@@ -563,17 +592,22 @@ void process_incoming_mk3_packet (uint8_t *incoming_packet, struct board_state *
   if (type == MIDI_CIN_NOTE_ON || type == MIDI_CIN_NOTE_OFF || type == MIDI_CIN_POLY_KEYPRESS || type == MIDI_CIN_CONTROL_CHANGE) {
     if (data[1] >=11 && data[1] <= 89) {
       int column = data[1] % 10;
-      int row = (data[1] - column)/10;
+
+      // Skip the first column, which we have to use as controls.
+      if (column) {
+        // Offset the row by one to skip the very lowest row of buttons and paint the square pads.
+        int row = ((data[1] - column)/10) - 1;
 
 
-      // Calculate the note from the row and ofset
-      int tuned_note = offset + (column * 3) + (row * 4);
+        // Calculate the note from the row and ofset
+        int tuned_note = offset + (column * 3) + (row * 4);
 
-      if (tuned_note < 128) {
-        // Store our velocity in board_state -> held_note_velocities
-        board_state->held_note_velocities[tuned_note] = data[2];
+        if (tuned_note < 128) {
+          // Store our velocity in board_state -> held_note_velocities
+          board_state->held_note_velocities[tuned_note] = data[2];
 
-        board_state->is_dirty = true;
+          board_state->is_dirty = true;
+        }
       }
     }    
   }
@@ -591,7 +625,7 @@ void process_incoming_mk3_packet (uint8_t *incoming_packet, struct board_state *
           }
           break;
         // Downward arrow
-        case 79:
+        case 70:
           if (offset >= 4) {
             increment_offset(board_state, hostOrClient, 2, -4);
             board_state->is_dirty = true;
@@ -622,9 +656,33 @@ void process_incoming_mk3_packet (uint8_t *incoming_packet, struct board_state *
   }
 }
 
+void process_incoming_external_packet(uint8_t *incoming_packet, struct board_state *board_state) {
+  uint8_t data[3];
+  memcpy(data, incoming_packet + 1, 3);
+
+  // Start with the message type
+  int type = data[0] >> 4;
+
+  if (type == MIDI_CIN_NOTE_ON || type == MIDI_CIN_POLY_KEYPRESS) {
+    // Store our velocity in board_state -> held_note_velocities
+    board_state->held_note_velocities[data[1]] = data[2];
+    board_state->is_dirty = true;
+  } 
+  else if (type == MIDI_CIN_NOTE_OFF) {
+    // Store our velocity in board_state -> held_note_velocities
+    board_state->held_note_velocities[data[1]] = 0;
+    board_state->is_dirty = true;
+  } 
+
+}
+
+
 enum LaunchpadVersion get_launchpad_version (uint16_t idVendor, uint16_t idProduct) {
   enum LaunchpadVersion launchpad_version;
-  launchpad_version = UNkNOWN;
+
+  // TODO: For whatever reason this is not detected properly. It may also be why
+  // the Launchpad S doesn't work in host mode.
+  launchpad_version = MK3;
 
   if (idVendor == 0x1235) {
     if (idProduct == 0x000E) {
