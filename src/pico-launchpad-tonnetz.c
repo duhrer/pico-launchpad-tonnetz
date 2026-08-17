@@ -58,6 +58,7 @@ static struct board_state board_state = {
 
       .host = {
         .offset = 45,
+        .global_midi_channel = 0,
         .launchpad_version = MK3
       }
 };
@@ -134,7 +135,7 @@ void sync_playing_notes (void) {
 
     if (playing_velocity && !held_velocity) {
       uint8_t note_off_message[3] = {
-          MIDI_CIN_NOTE_OFF << 4, a, held_velocity
+          (MIDI_CIN_NOTE_OFF << 4) | board_state.host.global_midi_channel, a, held_velocity
       };
 
       // This should use cable 3.
@@ -144,7 +145,7 @@ void sync_playing_notes (void) {
     // Play a new note
     else if (playing_velocity == 0 && held_velocity) {
       uint8_t note_on_message[3] = {
-        MIDI_CIN_NOTE_ON << 4, a, held_velocity
+        (MIDI_CIN_NOTE_ON << 4) | board_state.host.global_midi_channel, a, held_velocity
       };
 
       // This should use cable 3.
@@ -154,7 +155,7 @@ void sync_playing_notes (void) {
     // Time to indicate that the note's velocity has changed.
     else if (playing_velocity != held_velocity) {
       uint8_t poly_message[3] = {
-        MIDI_CIN_POLY_KEYPRESS << 4, a, held_velocity
+        (MIDI_CIN_POLY_KEYPRESS << 4) | board_state.host.global_midi_channel, a, held_velocity
       };
 
       // This should use cable 3.

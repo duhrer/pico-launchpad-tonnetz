@@ -24,6 +24,9 @@ struct host_state {
     uint8_t offset;
 
     uint8_t client_idx;
+
+    uint8_t global_midi_channel;
+
     enum LaunchpadVersion launchpad_version;
 };
 

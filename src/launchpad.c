@@ -33,7 +33,7 @@ void clear_all_notes(struct board_state *board_state) {
       board_state->playing_note_velocities[a] = 0;
 
       uint8_t note_off_message[3] = {
-          MIDI_CIN_NOTE_OFF << 4, a, 0
+          (MIDI_CIN_NOTE_OFF << 4) | board_state -> host.global_midi_channel , a, 0
       };
 
       // This should use cable 3.
@@ -331,7 +331,7 @@ void paint_mk2_host_launchpad(struct board_state *board_state) {
          }
 
         uint8_t note_on_message[3] = {
-          MIDI_CIN_NOTE_ON << 4, launchpad_note, velocity
+          (MIDI_CIN_NOTE_ON << 4)  | board_state -> host.global_midi_channel, launchpad_note, velocity
         };
 
         // tuh_midi_stream_write(board_state->host.client_idx, 1, note_on_message, sizeof(note_on_message));
@@ -372,7 +372,11 @@ void paint_mk3_host_launchpad(struct board_state *board_state) {
       }
 
       uint8_t note_on_message[3] = {
-        MIDI_CIN_NOTE_ON << 4, launchpad_note, velocity
+        // TODO: We need to figure out why we have to use the MK3 drawing method
+        // for a MK2 in host mode, this should not use the channel info
+        // MIDI_CIN_NOTE_ON << 4, launchpad_note, velocity
+        (MIDI_CIN_NOTE_ON << 4)  | board_state -> host.global_midi_channel, launchpad_note, velocity
+        // (MIDI_CIN_NOTE_ON << 4)  | 2, launchpad_note, velocity
       };
 
       // The MK3 wants data on the first cable, i.e. "MIDI" and not "DIN" or "DAW"
@@ -382,6 +386,18 @@ void paint_mk3_host_launchpad(struct board_state *board_state) {
 }
 
 void process_incoming_host_packet(uint8_t *incoming_packet, struct board_state *board_state) {
+    uint8_t type = (incoming_packet[1] >> 4) & 0xf;
+
+    // Only update the channel if the message includes it.
+    if (type == MIDI_CIN_NOTE_ON || type == MIDI_CIN_NOTE_OFF || type == MIDI_CIN_CONTROL_CHANGE || type == MIDI_CIN_POLY_KEYPRESS) {
+      uint8_t global_midi_channel = (incoming_packet[1] & 0xf);
+      // uint8_t global_midi_channel = 0;
+      if (global_midi_channel != board_state -> host.global_midi_channel) {
+        clear_all_notes(board_state);
+        board_state -> host.global_midi_channel = global_midi_channel;
+      }
+    }
+
     if (board_state->host.launchpad_version == MK1) {
         process_incoming_mk1_packet(incoming_packet, board_state, HOST);
     }
@@ -680,15 +696,15 @@ void process_incoming_external_packet(uint8_t *incoming_packet, struct board_sta
 enum LaunchpadVersion get_launchpad_version (uint16_t idVendor, uint16_t idProduct) {
   enum LaunchpadVersion launchpad_version;
 
-  // TODO: For whatever reason this is not detected properly. It may also be why
-  // the Launchpad S doesn't work in host mode.
   launchpad_version = MK3;
 
   if (idVendor == 0x1235) {
     if (idProduct == 0x000E) {
       launchpad_version = MK1;
     }
-    else if (idProduct >= 0x0051 && idProduct <= 0x0060) {
+    else if (
+      idProduct >= 0x0051 && idProduct <= 0x0060
+    ) {
       launchpad_version = MK2;
     }
     else if (idProduct >= 0x0123 && idProduct <= 0x0132) {
